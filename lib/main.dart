@@ -1,49 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(MyApp());
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
 }
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Firebase',
-      home: AddData(),
-    );
+class _HomePageState extends State<HomePage> {
+  final textcontroller = TextEditingController();
+  final databaseRef = FirebaseDatabase.instance.reference();
+  final Future<FirebaseApp> _future = Firebase.initializeApp();
+
+  void addData(String data) {
+    databaseRef.push().set({'name': data, 'comment': 'A good season'});
   }
-}
 
-class AddData extends StatelessWidget {
+  void printFirebase(){
+    databaseRef.once().then((DataSnapshot snapshot) {
+      print('Data : ${snapshot.value}');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    printFirebase();
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: Text("Read/Write/Update Data to Firebase"),
+        title: Text("Firebase Demo"),
       ),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('data').snapshots(),
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (!snapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          return ListView(
-            children: snapshot.data.docs.map((document) {
+      body: FutureBuilder(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Text(snapshot.error.toString());
+            } else {
               return Container(
-                child: Center(child: Text(document['text'])),
+                child: Column(
+                  children: <Widget>[
+                    SizedBox(height: 250.0),
+                    Padding(
+                      padding: EdgeInsets.all(10.0),
+                      child: TextField(
+                        controller: textcontroller,
+                      ),
+                    ),
+                    SizedBox(height: 30.0),
+                    Center(
+                      child: RaisedButton(
+                          color: Colors.pinkAccent,
+                          child: Text("Save to Database"),
+                          onPressed: () {
+                            addData(textcontroller.text);
+                            //call method flutter upload
+                          }
+                        )
+                     ),
+                  ],
+                ),
               );
-            }).toList(),
-          );
-        },
-      ),
+            }
+          }
+       ),
     );
   }
 }
